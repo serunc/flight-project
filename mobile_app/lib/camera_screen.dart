@@ -55,22 +55,22 @@ class _CameraScreenState extends State<CameraScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kamera bulunamadi.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Kamera bulunamadi.')));
       return;
     }
 
-   final camera = cameras.firstWhere(
-  (c) => c.lensDirection == CameraLensDirection.back,
-  orElse: () => cameras.first,
-);
+    final camera = cameras.firstWhere(
+      (c) => c.lensDirection == CameraLensDirection.back,
+      orElse: () => cameras.first,
+    );
 
-final controller = CameraController(
-  camera,
-  ResolutionPreset.medium,
-  enableAudio: false,
-);
+    final controller = CameraController(
+      camera,
+      ResolutionPreset.medium,
+      enableAudio: false,
+    );
 
     setState(() {
       _controller = controller;
@@ -91,27 +91,42 @@ final controller = CameraController(
     });
 
     try {
+      print('📷 Camera Screen: Taking picture...');
       await initializeFuture;
-      final orientation = MediaQuery.of(context).orientation == Orientation.portrait
+
+      final orientation =
+          MediaQuery.of(context).orientation == Orientation.portrait
           ? 'portrait'
           : 'landscape';
+      print('📱 Camera Screen: Device orientation: $orientation');
+
       final XFile file = await controller.takePicture();
+      print('✅ Camera Screen: Picture taken, file: ${file.path}');
+
+      print('🔄 Camera Screen: Processing capture metadata...');
       final captureData = await _captureMetadataService.captureWithMetadata(
         file,
         orientation: orientation,
       );
+
       if (!mounted) {
+        print('⚠️ Camera Screen: Widget not mounted after capture');
         return;
       }
 
+      print(
+        '🚀 Camera Screen: Processing capture data for flight detection...',
+      );
       await _processCaptureData(captureData);
+      print('✅ Camera Screen: Capture process completed successfully');
     } catch (error) {
+      print('❌ Camera Screen: Error during capture: $error');
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fotoğraf çekilemedi: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Fotoğraf çekilemedi: $error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -132,16 +147,17 @@ final controller = CameraController(
         _otherNearbyFlights = <NearbyFlight>[];
         _userAircraftDistanceMeters = null;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Yön bilgisi alınamadı')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Yön bilgisi alınamadı')));
       return;
     }
 
-    final estimatedDistanceMeters = _aircraftPositionEstimator.estimateDistanceMeters(
-      pitchAngleDeg: captureData.pitchAngle,
-      estimatedAltitudeMeters: 10000,
-    );
+    final estimatedDistanceMeters = _aircraftPositionEstimator
+        .estimateDistanceMeters(
+          pitchAngleDeg: captureData.pitchAngle,
+          estimatedAltitudeMeters: 10000,
+        );
     if (estimatedDistanceMeters == null) {
       setState(() {
         _captureData = captureData;
@@ -157,26 +173,46 @@ final controller = CameraController(
       return;
     }
 
-    final targetCoordinate = _targetCoordinateEstimator.estimateTargetCoordinate(
-      latitude: captureData.latitude,
-      longitude: captureData.longitude,
-      headingDeg: headingDeg,
-      distanceMeters: estimatedDistanceMeters,
+    final targetCoordinate = _targetCoordinateEstimator
+        .estimateTargetCoordinate(
+          latitude: captureData.latitude,
+          longitude: captureData.longitude,
+          headingDeg: headingDeg,
+          distanceMeters: estimatedDistanceMeters,
+        );
+
+    print(
+      '🎯 Target coordinate: lat=${targetCoordinate.latitude.toStringAsFixed(6)}, lon=${targetCoordinate.longitude.toStringAsFixed(6)}',
+    );
+    print(
+      '📏 Estimated distance to aircraft: ${estimatedDistanceMeters.toStringAsFixed(2)} meters',
     );
 
-    final candidateFlights = await _flightService.fetchFlightsNearCoordinate(
-      latitude: targetCoordinate.latitude,
-      longitude: targetCoordinate.longitude,
-      timestamp: captureData.timestamp,
-      radiusMeters: 500,
+    // sabiha gokcen havalimanı koordinatları: 40.8986, 29.3092
+    const bool useTestLocation = true;
+    final latitude = useTestLocation ? 40.8986 : targetCoordinate.latitude;
+    final longitude = useTestLocation ? 29.3092 : targetCoordinate.longitude;
+
+    final candidateFlights = await _flightService.fetchNearbyFlights(
+      latitude: latitude,
+      longitude: longitude,
+      timestamp: DateTime.now(),
+      maxResults: 10,
+      searchRadiusDegrees: 1.0, // ~500 meters
     );
 
     NearbyFlight? detectedFlight;
     final otherNearbyFlights = <NearbyFlight>[];
     double? userAircraftDistanceMeters;
 
+    print('✈️ Candidate flights found: ${candidateFlights.length}');
+
     if (candidateFlights.isNotEmpty) {
       detectedFlight = candidateFlights.first;
+      print(
+        '✈️ Detected flight: ${detectedFlight.flightCode} at ${detectedFlight.latitude.toStringAsFixed(6)}, ${detectedFlight.longitude.toStringAsFixed(6)}, alt=${detectedFlight.altitudeMeters?.toStringAsFixed(0) ?? 'unknown'}',
+      );
+
       for (final flight in candidateFlights.skip(1)) {
         final distanceToDetected = _flightService.distanceMetersBetween(
           detectedFlight.latitude,
@@ -197,10 +233,17 @@ final controller = CameraController(
       );
       final altitudeMeters = detectedFlight.altitudeMeters ?? 10000;
       userAircraftDistanceMeters = sqrt(
-        horizontalDistance * horizontalDistance + altitudeMeters * altitudeMeters,
+        horizontalDistance * horizontalDistance +
+            altitudeMeters * altitudeMeters,
       );
+      print(
+        '📏 User to aircraft 3D distance: ${userAircraftDistanceMeters.toStringAsFixed(2)} meters',
+      );
+    } else {
+      print('⚠️ Processing: No flights found near target coordinate');
     }
 
+    print('✅ Processing completed. Updating UI...');
     setState(() {
       _captureData = captureData;
       _estimatedDistanceMeters = estimatedDistanceMeters;
@@ -223,9 +266,7 @@ final controller = CameraController(
     final initializeFuture = _initializeControllerFuture;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Kamera'),
-      ),
+      appBar: AppBar(title: const Text('Kamera')),
       body: Column(
         children: [
           Expanded(
@@ -254,7 +295,9 @@ final controller = CameraController(
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _captureData == null ? 'Henüz fotoğraf çekilmedi.' : _buildInfoText(),
+                  _captureData == null
+                      ? 'Henüz fotoğraf çekilmedi.'
+                      : _buildInfoText(),
                 ),
               ],
             ),
@@ -290,9 +333,9 @@ final controller = CameraController(
       _detectedFlight == null
           ? 'Uçak tespit edilemedi.'
           : '${_detectedFlight!.flightCode} '
-              '(${_detectedFlight!.latitude.toStringAsFixed(6)}, '
-              '${_detectedFlight!.longitude.toStringAsFixed(6)}) '
-              'altitude: ${_detectedFlight!.altitudeMeters?.toStringAsFixed(2) ?? '10000 varsayildi'} m',
+                '(${_detectedFlight!.latitude.toStringAsFixed(6)}, '
+                '${_detectedFlight!.longitude.toStringAsFixed(6)}) '
+                'altitude: ${_detectedFlight!.altitudeMeters?.toStringAsFixed(2) ?? '10000 varsayildi'} m',
       '',
       '4) Kullanıcı-uçak mesafesi',
       '${_userAircraftDistanceMeters?.toStringAsFixed(2) ?? 'hesaplanamadi'} metre',
@@ -302,7 +345,8 @@ final controller = CameraController(
         'Yok'
       else
         ..._otherNearbyFlights.map(
-          (flight) => '- ${flight.flightCode} '
+          (flight) =>
+              '- ${flight.flightCode} '
               '(${flight.latitude.toStringAsFixed(6)}, '
               '${flight.longitude.toStringAsFixed(6)})',
         ),

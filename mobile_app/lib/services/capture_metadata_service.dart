@@ -18,12 +18,22 @@ class CaptureMetadataService {
     XFile imageFile, {
     required String orientation,
   }) async {
+    print('📸 Capture Metadata Service: Starting capture with metadata...');
+    print('🖼️ Image file: ${imageFile.path}');
+
     final timestamp = DateTime.now();
+    print('🕒 Timestamp: $timestamp');
+
+    print('📍 Getting current position...');
     final position = await _locationService.getCurrentPosition();
+
+    print('📐 Getting pitch angle...');
     final pitchAngle = _sensorService.getPitchAngle();
+
+    print('🧭 Getting heading...');
     final headingDeg = _sensorService.getHeadingDeg();
 
-    return CaptureData(
+    final captureData = CaptureData(
       imagePath: imageFile.path,
       timestamp: timestamp,
       latitude: position.latitude,
@@ -32,5 +42,10 @@ class CaptureMetadataService {
       headingDeg: headingDeg,
       orientation: orientation,
     );
+
+    print('✅ Capture Metadata Service: Capture completed');
+    print('📊 Final data: Lat=${position.latitude.toStringAsFixed(6)}, Lon=${position.longitude.toStringAsFixed(6)}, Pitch=${pitchAngle.toStringAsFixed(2)}°, Heading=${headingDeg?.toStringAsFixed(2) ?? 'N/A'}°, Orientation=$orientation');
+
+    return captureData;
   }
 }

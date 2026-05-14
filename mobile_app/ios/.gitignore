@@ -13,11 +13,18 @@ Icon?
 **/Pods/
 **/.symlinks/
 profile
-xcuserdata
+**/xcuserdata/
 **/.generated/
 Flutter/App.framework
 Flutter/Flutter.framework
 Flutter/Flutter.podspec
+*.tmp
+*.swp
+*~
+
+# Build artifacts
+build/
+*.xcscmblueprint
 Flutter/Generated.xcconfig
 Flutter/ephemeral/
 Flutter/app.flx

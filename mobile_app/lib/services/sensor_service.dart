@@ -10,24 +10,31 @@ class SensorService {
   StreamSubscription<MagnetometerEvent>? _magnetometerSubscription;
 
   void start() {
+    print('🌀 Sensor Service: Starting sensor listeners...');
     _accelerometerSubscription ??= accelerometerEventStream().listen((event) {
       _latestAccelerometer = event;
+      print('📊 Accelerometer: x=${event.x.toStringAsFixed(2)}, y=${event.y.toStringAsFixed(2)}, z=${event.z.toStringAsFixed(2)}');
     });
     _magnetometerSubscription ??= magnetometerEventStream().listen((event) {
       _latestMagnetometer = event;
+      print('🧲 Magnetometer: x=${event.x.toStringAsFixed(2)}, y=${event.y.toStringAsFixed(2)}, z=${event.z.toStringAsFixed(2)}');
     });
+    print('✅ Sensor Service: Sensor listeners started');
   }
 
   void stop() {
+    print('🛑 Sensor Service: Stopping sensor listeners...');
     _accelerometerSubscription?.cancel();
     _magnetometerSubscription?.cancel();
     _accelerometerSubscription = null;
     _magnetometerSubscription = null;
+    print('✅ Sensor Service: Sensor listeners stopped');
   }
 
   double getPitchAngle() {
     final reading = _latestAccelerometer;
     if (reading == null) {
+      print('⚠️ Sensor Service: No accelerometer reading available');
       return 0.0;
     }
 
@@ -35,13 +42,16 @@ class SensorService {
       -reading.x,
       sqrt(reading.y * reading.y + reading.z * reading.z),
     );
-    return pitchRadians * 180 / pi;
+    final pitchDegrees = pitchRadians * 180 / pi;
+    print('📐 Sensor Service: Pitch angle calculated: ${pitchDegrees.toStringAsFixed(2)}°');
+    return pitchDegrees;
   }
 
   double? getHeadingDeg() {
     final accel = _latestAccelerometer;
     final mag = _latestMagnetometer;
     if (accel == null || mag == null) {
+      print('⚠️ Sensor Service: Missing accelerometer or magnetometer data for heading calculation');
       return null;
     }
 
