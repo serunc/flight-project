@@ -324,12 +324,7 @@ class _CameraScreenState extends State<CameraScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _hudBox(
-            icon: Icons.navigation,
-            text: _heading == null
-                ? 'HEADING --°'
-                : 'HEADING ${_heading!.toStringAsFixed(0)}°',
-          ),
+          _hudBox(icon: Icons.auto_awesome, text: 'AI'),
           GestureDetector(
             onTap: _showAllFlightsSheet,
             child: _hudBox(
