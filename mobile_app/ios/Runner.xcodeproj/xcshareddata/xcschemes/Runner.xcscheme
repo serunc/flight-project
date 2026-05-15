@@ -62,7 +62,8 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       enableGPUValidationMode = "1"
-      allowLocationSimulation = "YES">
+      allowLocationSimulation = "YES"
+      destinationSpecifier = "com.apple.platform.iphonesimulator">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference

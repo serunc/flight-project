@@ -61,7 +61,8 @@ class FlightService {
     int maxResults = 30,
   }) async {
     final latitudeDelta = radiusMeters / 111320.0;
-    final longitudeDelta = radiusMeters / (111320.0 * cos(_degreesToRadians(latitude)).abs());
+    final longitudeDelta =
+        radiusMeters / (111320.0 * cos(_degreesToRadians(latitude)).abs());
 
     final flights = await _fetchFlightsInBoundingBox(
       minLat: latitude - latitudeDelta,
@@ -100,11 +101,12 @@ class FlightService {
     final dLat = _degreesToRadians(lat2 - lat1);
     final dLon = _degreesToRadians(lon2 - lon1);
 
-    final a = (pow(sin(dLat / 2), 2) +
-        cos(_degreesToRadians(lat1)) *
-            cos(_degreesToRadians(lat2)) *
-            pow(sin(dLon / 2), 2))
-        .toDouble();
+    final a =
+        (pow(sin(dLat / 2), 2) +
+                cos(_degreesToRadians(lat1)) *
+                    cos(_degreesToRadians(lat2)) *
+                    pow(sin(dLon / 2), 2))
+            .toDouble();
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return earthRadiusMeters * c;
   }
@@ -126,10 +128,18 @@ class FlightService {
       },
     );
 
+    print('🚀 API Request URL: $uri');
+    print(
+      '📊 Request Params: lamin=$minLat, lomin=$minLon, lamax=$maxLat, lomax=$maxLon, time=${timestamp.millisecondsSinceEpoch ~/ 1000}',
+    );
+
     final client = HttpClient();
     try {
       final request = await client.getUrl(uri);
       final response = await request.close();
+
+      print('📡 Response Status: ${response.statusCode}');
+      print('📡 Response Headers: ${response.headers}');
 
       if (response.statusCode != HttpStatus.ok) {
         throw HttpException(
@@ -139,8 +149,12 @@ class FlightService {
       }
 
       final rawBody = await response.transform(utf8.decoder).join();
+      print('📦 Raw Response Body: $rawBody');
+
       final decoded = jsonDecode(rawBody) as Map<String, dynamic>;
       final states = (decoded['states'] as List<dynamic>? ?? <dynamic>[]);
+
+      print('✈️ Found ${states.length} flight states in response');
 
       final flights = <NearbyFlight>[];
       for (final state in states) {
@@ -168,7 +182,10 @@ class FlightService {
     final timePosition = _toInt(state[3]);
     final lastContact = _toInt(state[4]);
 
-    if (callsign == null || callsign.isEmpty || stateLat == null || stateLon == null) {
+    if (callsign == null ||
+        callsign.isEmpty ||
+        stateLat == null ||
+        stateLon == null) {
       return null;
     }
 
@@ -197,6 +214,37 @@ class FlightService {
   int? _toInt(dynamic value) {
     if (value is int) return value;
     return null;
+  }
+
+  // Debug için dummy flight verisi döndüren metod
+  List<NearbyFlight> _getDummyFlights(
+    double latitude,
+    double longitude,
+    DateTime timestamp,
+    int maxResults,
+  ) {
+    // Mevcut konumun etrafında rastgele uçaklar oluştur
+    final random = DateTime.now().millisecondsSinceEpoch;
+    final flights = <NearbyFlight>[];
+
+    for (int i = 0; i < maxResults; i++) {
+      // Rastgele offset (-0.1 ile +0.1 derece arası)
+      final latOffset = (random % 200 - 100) / 1000.0; // -0.1 to +0.1
+      final lonOffset = (random % 200 - 100) / 1000.0;
+
+      flights.add(
+        NearbyFlight(
+          flightCode: 'DUMMY${i + 1}',
+          latitude: latitude + latOffset,
+          longitude: longitude + lonOffset,
+          altitudeMeters:
+              10000.0 + (i * 1000), // 10km'den başlayan yükseklikler
+          timestamp: timestamp,
+        ),
+      );
+    }
+
+    return flights;
   }
 }
 
