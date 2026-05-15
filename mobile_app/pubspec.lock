@@ -126,6 +126,22 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_compass:
+    dependency: "direct main"
+    description:
+      name: flutter_compass
+      sha256: "1b4d7e6c95a675ec8482b5c9c9ccf1ebf0ced3dbec59dce28ad609da953de850"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.1"
+  flutter_dotenv:
+    dependency: "direct main"
+    description:
+      name: flutter_dotenv
+      sha256: b7c7be5cd9f6ef7a78429cabd2774d3c4af50e79cb2b7593e3d5d763ef95c61b
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.2.1"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -200,6 +216,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.5"
+  http:
+    dependency: "direct main"
+    description:
+      name: http
+      sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.6.0"
+  http_parser:
+    dependency: transitive
+    description:
+      name: http_parser
+      sha256: "178d74305e7866013777bab2c3d8726205dc5a4dd935297175b19a23a2e66571"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.2"
   leak_tracker:
     dependency: transitive
     description:
